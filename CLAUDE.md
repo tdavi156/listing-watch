@@ -6,6 +6,7 @@ A learning project. Tyler is building a small Kotlin REST API to learn backend d
 - Strong in Kotlin (game development with LibGDX, LibKTX, and Fleks) and Java (REST integrations and test tooling). Knows Git and Android Studio.
 - Rusty on SQL, server-side coroutines, and testing web services. New to Ktor, Exposed, Postgres, Docker, CI, LLM APIs, and cloud platforms.
 - Wants to write most of the code himself and be able to explain every line.
+- Spell out what an acronym means the first time it comes up in a session, especially in step-by-step instructions.
 
 ## Writing style
 Use plain, natural writing in the README, PR descriptions, commit messages, and docs. Don't use em dashes to interject a clause, and don't use colons to splice two clauses together in prose.
