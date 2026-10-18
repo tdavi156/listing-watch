@@ -1,0 +1,7 @@
+# Store text files with LF line endings so scripts run on Linux CI
+* text=auto eol=lf
+
+# Windows batch files need CRLF
+*.bat text eol=crlf
+
+*.jar binary

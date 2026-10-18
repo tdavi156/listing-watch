@@ -1,0 +1,13 @@
+# Gradle and Kotlin build output
+.gradle/
+build/
+.kotlin/
+
+# IntelliJ
+.idea/
+*.iml
+out/
+
+# Secrets and local settings
+.env
+.claude/settings.local.json
