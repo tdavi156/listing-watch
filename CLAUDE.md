@@ -1,6 +1,6 @@
 # listing-watch
 
-A learning project. Tyler is building a small Kotlin REST API to learn backend development and practice for technical interviews. The project details and milestones are in `docs/PLAN.md`. Read it at the start of each milestone, not every session.
+A learning project. Tyler is building a small Kotlin REST API to learn backend development and practice for technical interviews. The repo is public, so never mention job applications, specific employers or roles, or Tyler's work history in any file, commit message, or PR. The project details and milestones are in `docs/PLAN.md`. Read it at the start of each milestone, not every session.
 
 ## Tyler
 - Strong in Kotlin (game development with LibGDX, LibKTX, and Fleks) and Java (REST integrations and test tooling). Knows Git and Android Studio.

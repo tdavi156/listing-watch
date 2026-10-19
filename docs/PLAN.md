@@ -61,6 +61,44 @@ Rough size estimates assume part-time work.
 - **Concepts:** what a good README shows a reviewer, how to present a project in an interview.
 - **Interview angles:** Scaling a service (stateless instances, read replicas, caching, queues, and where Redis and OpenSearch would fit). What you would do differently next time. How you used AI tools responsibly (reviewing output, writing tests, understanding every line).
 
+### Stretch milestone: Observability with Datadog (after Milestone 4, about 3 sessions plus the trial)
+**Why:** Hands-on experience instrumenting and troubleshooting a real app with Datadog Real User Monitoring (RUM), Application Performance Monitoring (APM), and LLM Observability. Tyler uses Datadog's 14-day free trial and starts it only once the app runs end to end, so Part 1 must be finished and tested before the trial clock starts.
+
+**Prerequisites:** Milestones 2 and 3 merged (Postgres and the LLM check) and Docker Desktop installed.
+
+**Ground rules**
+- Claude sets up and explains the instrumentation. Tyler does all of the investigating. In Part 3, Claude only sets up each scenario, never diagnoses it, and gives hints only when Tyler asks.
+- `DD_API_KEY`, the RUM application ID, and the RUM client token come from environment variables only and are never committed. The README lists the variable names with no values. The client token is designed to be visible in the browser, so "environment only" means it's injected at runtime, not hidden from people viewing the page.
+- Instrumentation is off by default. `test`, `run`, and CI behave exactly as before. The default build never downloads or references the Datadog agent jar.
+
+**Part 1: prepare before the trial starts**
+- **Opt-in launch.** Add a separate Gradle task (for example `runWithDatadog`) that attaches `dd-java-agent` from a path given in an environment variable and fails with a clear message if it's missing. The jar is downloaded by hand and kept out of the repo. Compare this with `JAVA_TOOL_OPTIONS`, which attaches the agent to every JVM started from that shell, Gradle included. Never set it globally, since that would also attach it to Tyler's other projects.
+- **How a Java agent works.** Explain `-javaagent`, the `premain` entry point, and how the agent rewrites library bytecode as classes load. That's why Netty, JDBC, and HTTP clients get traced without code changes.
+- **Check what actually gets traced in this stack.** Look up current dd-trace-java support for the Netty server, Ktor routing, Kotlin coroutines, JDBC through Exposed, and the Ktor client engine chosen in Milestone 3. Two known risks: coroutines can switch threads and lose trace context, and an uninstrumented client engine means the outbound LLM call won't show up as a span. Confirm on the first real run, and add manual spans only where needed.
+- **Unified service tagging.** Set `DD_SERVICE`, `DD_ENV`, and `DD_VERSION` (taken from the Gradle `version`), and use the same values in the RUM config. Explain why mismatched tags break the links between products.
+- **Datadog Agent or agentless.** Decide with Tyler. APM traces from the Java tracer normally go through a Datadog Agent, while agentless mode mainly applies to LLM Observability (`dd.llmobs.agentless.enabled`). Verify both against the current docs. If the Agent wins, run it in `docker-compose.yml` under a separate profile, so a plain `docker compose up` doesn't start it.
+- **LLM Observability.** Plan the setup with `dd.llmobs.enabled` and `dd.llmobs.ml.app`, checking the current docs for exact settings and the minimum tracer version. The LLM call goes through the raw Ktor client, so auto-instrumentation probably won't recognize it as an LLM call. It will likely need manual spans through the Java LLM Observability SDK, which may add a compile-time dependency. Ask before adding it, and confirm it does nothing when the agent isn't attached.
+- **Cost check.** Real prompt and token data needs real Anthropic calls, which use prepaid credits. Decide with Tyler between a small model with a handful of calls, or LLM spans around the fake checker that show the structure without real tokens.
+- **A small frontend.** One static HTML page served by Ktor (`staticResources`, no new dependency). It lets Tyler create or pick a brand, submit a listing, run a check, and see the verdict. Plain HTML and JavaScript, no framework.
+- **RUM SDK.** Load Datadog's browser SDK on that page. Its settings (application ID, client token, site, service, env, version) come from a small endpoint that builds them from environment variables and turns RUM off when they're unset.
+- **RUM-to-APM linking.** Configure `allowedTracingUrls` so the SDK adds tracing headers to API calls. Explain the headers (Datadog's `x-datadog-*` headers and the W3C `traceparent` and `tracestate`). The page and the API share an origin, so the browser needs no CORS (Cross-Origin Resource Sharing) setup for these calls. Explain what a cross-origin setup would need (a preflight request and `Access-Control-Allow-Headers` listing the tracing headers), and optionally serve the page from a second port to see that failure for real.
+
+**Part 2: once the trial starts (Tyler drives)**
+- Confirm data appears for RUM sessions, APM traces (route, then the Postgres query, then the outbound LLM call), and LLM Observability (prompts, responses, latency, tokens).
+- Claude gives a short tour of each product area, then Tyler explores on his own.
+
+**Part 3: break it on purpose (Tyler diagnoses, Claude only sets up the scenario)**
+1. **Missing sessions:** lower `sessionSampleRate`, then visit with an ad blocker on.
+2. **Incorrect tagging:** ship a build with a wrong env or version tag.
+3. **Front-end error:** a button that throws a JavaScript error.
+4. **Slow backend:** an artificially slow Postgres query or a missing index. This connects to `EXPLAIN ANALYZE` from Milestone 2.
+5. **Flaky dependency:** the LLM call times out or returns malformed JSON. Watch how it shows up across APM, LLM Observability, and RUM. The Milestone 3 retry policy may hide some failures, and that's worth noticing too.
+
+For each scenario, Tyler writes a short playbook in `docs/playbooks/` with the symptom, how he found it, the root cause, and the fix. Afterward Claude reviews each one and says what an experienced engineer would have checked that he missed.
+
+- **Done when:** all three products show live data, RUM-to-APM linking works, Tyler has written all five playbooks himself, and he can explain the setup without notes.
+- **Learning log:** an entry with interview talking points about tracing a problem across the browser, the backend, and the LLM call.
+
 ### Stretch goals (only if Tyler wants them, one at a time)
 - **Redis:** cache check results so re-checking an unchanged listing doesn't call the LLM again. Runs free in Docker.
 - **OpenSearch:** index listings and add a search endpoint (full-text search on titles). Runs free in Docker.
